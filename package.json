@@ -1,0 +1,16 @@
+{
+  "name": "puppeteer-express",
+  "version": "1.0.0",
+  "description": "Uses puppeteer to capture screenshots and serve it up using express.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node capture.js"
+  },
+  "author": "Aung Khant",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "puppeteer": "^2.0.0"
+  }
+}
