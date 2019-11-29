@@ -3,6 +3,8 @@ const puppeteer = require('puppeteer');
 const express = require('express');
 const app = express();
 const port = 8080;
+let puppeteerBrowser;
+let puppeteerPage;
 
 app.get('/', (req, res) => {
   const url = req.param("url");
@@ -23,20 +25,24 @@ app.get('/', (req, res) => {
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
 
 const getPage = async (site_name, width, height) => {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.setViewport({ width, height });
-  await page.goto(site_name);
+  if(!puppeteerBrowser) {
+    puppeteerBrowser = await puppeteer.launch();
 
-  let shotResult = await page.screenshot({
+    if(!puppeteerPage) {
+      puppeteerPage = await puppeteerBrowser.newPage();
+    }
+  }
+
+  await puppeteerPage.setViewport({ width, height });
+  await puppeteerPage.goto(site_name);
+
+  let shotResult = await puppeteerPage.screenshot({
     fullPage: true
   }).then((result) => {
     return result;
   }).catch(e => {
     return "Error";
   });
-
-  await browser.close();
 
   return shotResult;
 }
