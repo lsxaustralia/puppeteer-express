@@ -1,48 +1,43 @@
 const puppeteer = require('puppeteer');
-
 const express = require('express');
 const app = express();
 const port = 8080;
+
 let puppeteerBrowser;
 let puppeteerPage;
 
-app.get('/', (req, res) => {
-  const url = req.param("url");
-  const pageWidth = req.param("width") ? req.param("width") : 1920;
-  const pageHeight = req.param("height") ? req.param("height") : 1080;
+app.get('/', async (req, res) => {
+  const url = req.query.url;
+  const pageWidth = parseInt(req.query.width) || 1920;
+  const pageHeight = parseInt(req.query.height) || 1080;
 
-  getPage(url, pageWidth, pageHeight)
-    .then((data) => {
-      res.end(data);
-    })
-    .catch((e) => {
-      res.status(500, {
-        error: e
-      });
-    });
-});
-
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
-
-const getPage = async (site_name, width, height) => {
-  if(!puppeteerBrowser) {
-    puppeteerBrowser = await puppeteer.launch();
-
-    if(!puppeteerPage) {
-      puppeteerPage = await puppeteerBrowser.newPage();
-    }
+  if (!url) {
+    return res.status(400).send('Missing ?url param');
   }
 
-  await puppeteerPage.setViewport({ width, height });
-  await puppeteerPage.goto(site_name);
+  try {
+    const data = await getPage(url, pageWidth, pageHeight);
+    res.set('Content-Type', 'image/png');
+    res.send(data);
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
 
-  let shotResult = await puppeteerPage.screenshot({
-    fullPage: true
-  }).then((result) => {
-    return result;
-  }).catch(e => {
-    return "Error";
-  });
+const getPage = async (siteUrl, width, height) => {
+  if (!puppeteerBrowser) {
+    puppeteerBrowser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+  }
 
-  return shotResult;
-}
+  const page = await puppeteerBrowser.newPage();
+  await page.setViewport({ width, height });
+  await page.goto(siteUrl, { waitUntil: 'networkidle2' });
+
+  const screenshot = await page.screenshot({ fullPage: true });
+  await page.close();
+  return screenshot;
+};
+
+app.listen(port, () => console.log(`Screenshot service running on port ${port}`));
